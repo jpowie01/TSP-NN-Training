@@ -21,3 +21,7 @@ It will check average percentage difference between correct TSP solution and NN 
 ## Other project repositories
 - [TSP NN UI](https://github.com/jpowie01/TSP-NN-UI)
 - [TSP NN API](https://github.com/jpowie01/TSP-NN-API)
+
+## Authors
+- [Jakub Powierza](https://github.com/jpowie01)
+- [Karolina Olszewska](https://github.com/kolszewska)
