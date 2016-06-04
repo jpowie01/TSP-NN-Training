@@ -4,15 +4,14 @@ from pybrain.structure import TanhLayer, LinearLayer, SigmoidLayer, FullConnecti
 from pybrain.tools.customxml import NetworkWriter
 
 import time
-from graph import Graph, convert_output
+from graph import Graph
 
 # Configuration
-N = 5
-GRAPHS = 250
-RANDOM_TESTS = 100
-HIDDENLAYERS = 5
-LEARNINGRATE = 0.015
-MOMENTUM = 0.85
+N = 6
+GRAPHS = 10000
+HIDDENLAYERS = 6
+LEARNINGRATE = 0.2
+MOMENTUM = 0.3
 MINUTES = 3 * 60
 ITERATIONS = 999999999
 MAX_ERROR = 0.000001
@@ -25,27 +24,34 @@ trainingDataInput = []
 trainingDataOutput = []
 
 # Prepare training data
-print('Preparing data...')
+print('Generating data...')
 allGraphs = []
 for i in range(GRAPHS):
-    print(str(i) + ' out of ' + str(GRAPHS))
+    # Prepare graph
     graph = Graph(N)
     graph.compute_tsp()
     allGraphs.append(graph)
-    input = ()
+
+    # Create input
+    sample_input = ()
     for j in range(N):
         for k in range(N):
-            input += (graph.each_to_each[j][k], )
-    output = ()
+            sample_input += (graph.each_to_each[j][k], )
+
+    # Create output
+    sample_output = ()
     for j in range(N):
         for k in range(N):
             if graph.order_tsp[j] == k:
-                output += (1, )
+                sample_output += (1, )
             else:
-                output += (0, )
-    trainingData.addSample(input, output)
-    trainingDataInput.append(input)
-    trainingDataOutput.append(output)
+                sample_output += (0, )
+
+    # Save sample
+    trainingData.addSample(sample_input, sample_output)
+    trainingDataInput.append(sample_input)
+    trainingDataOutput.append(sample_output)
+
 print('Done')
 
 # Print header
@@ -76,7 +82,11 @@ net.addRecurrentConnection(FullConnection(net['hidden' + str(HIDDENLAYERS)], net
 net.sortModules()
 
 # Trainer
-trainer = BackpropTrainer(net, dataset=trainingData, learningrate=LEARNINGRATE, momentum=MOMENTUM, weightdecay=WEIGHTDECAY)
+trainer = BackpropTrainer(net,
+                          dataset=trainingData,
+                          learningrate=LEARNINGRATE,
+                          momentum=MOMENTUM,
+                          weightdecay=WEIGHTDECAY)
 
 # Preparations
 print('Training...')
@@ -90,69 +100,13 @@ for epoch in range(0, ITERATIONS):
     error = trainer.train()
     print(str(epoch) + '\t' + str(time.time() - start) + '\t' + str(error))
 
-    # Print results once per 3 minutes
-    if time.time() - one_minute >= 3 * 60:
+    # Save network once per 30 seconds
+    if time.time() - one_minute >= 30:
         # Save network
-        NetworkWriter.writeToFile(net, 'results/neural_network_'+str(iteration)+'.xml')
+        NetworkWriter.writeToFile(net, 'networks/neural_network_'+str(iteration).zfill(4)+'.xml')
+        print('Network saved to networks/neural_network_'+str(iteration).zfill(4)+'.xml')
         iteration += 1
         one_minute = time.time()
-
-        # Print result for training set
-        print('')
-        print('===================================')
-        print('Training set:')
-        print('===================================')
-        for i in range(GRAPHS):
-            input = trainingDataInput[i]
-            output = trainingDataOutput[i]
-            net_output = net.activate(input)
-            order = convert_output(net_output, N)
-
-            # Print result
-            print('Test no.' + str(i) + ':')
-            for j in range(N):
-                print('%1.4f\t%1.4f' % (allGraphs[i].graph[j][0], allGraphs[i].graph[j][1]))
-            for y in range(N):
-                for x in range(N):
-                    print('%1.4f' % output[y * N + x], end=' ')
-                print('   ', end='')
-                for x in range(N):
-                    print('%1.4f' % net_output[y * N + x], end=' ')
-                print('')
-
-        # Print result for random generated set
-        print('')
-        print('===================================')
-        print('Random set:')
-        print('===================================')
-        for i in range(RANDOM_TESTS):
-            graph = Graph(N)
-            graph.compute_tsp()
-            input = ()
-            for j in range(N):
-                for k in range(N):
-                    input += (graph.each_to_each[j][k], )
-            output = ()
-            for j in range(N):
-                for k in range(N):
-                    if graph.order_tsp[j] == k:
-                        output += (1, )
-                    else:
-                        output += (0, )
-            net_output = net.activate(input)
-            order = convert_output(net_output, N)
-
-            # Print result
-            print('Test no.' + str(i) + ':')
-            for i in range(N):
-                print('%1.4f\t%1.4f' % (graph.graph[i][0], graph.graph[i][1]))
-            for y in range(N):
-                for x in range(N):
-                    print('%1.4f' % output[y * N + x], end=' ')
-                print('   ', end='')
-                for x in range(N):
-                    print('%1.4f' % net_output[y * N + x], end=' ')
-                print('')
 
     # End learning
     if error < MAX_ERROR or time.time() - start > MINUTES * 60:
