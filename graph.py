@@ -43,7 +43,7 @@ class Graph:
 
 
 def convert_output(output, N):
-    order = [0, 0, 0, 0, 0]
+    order = [0, 0, 0, 0, 0, 0]
     for x in range(N):
         best_y = None
         best_y_value = -1
